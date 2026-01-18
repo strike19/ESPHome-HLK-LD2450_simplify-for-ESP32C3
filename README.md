@@ -2,6 +2,10 @@
 
 Eine vereinfachte ESPHome-Integration für den HLK-LD2450 mmWave Presence Sensor, optimiert für ESP32-C3 Super Mini Boards.
 
+ACHTUNG!!!!
+Noch nicht getestet und noch in der Entstehung!
+ACHTUNG!!!
+
 > **Basiert auf:** [TillFleisch/ESPHome-HLK-LD2450](https://github.com/TillFleisch/ESPHome-HLK-LD2450)
 
 ## 🔧 Behobene Bugs
