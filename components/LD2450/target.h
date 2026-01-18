@@ -71,15 +71,6 @@ namespace esphome::ld2450
         }
 
         /**
-         * @brief Sets the distance resolution sensor reference
-         * @param reference polling sensor reference
-         */
-        void set_distance_resolution_sensor(PollingSensor *distance_resolution_sensor)
-        {
-            distance_resolution_sensor_ = distance_resolution_sensor;
-        }
-
-        /**
          * @brief Sets the angle sensor reference
          * @param reference polling sensor reference
          */
@@ -174,15 +165,6 @@ namespace esphome::ld2450
             return speed_;
         }
 
-        /**
-         * Gets the distance resolution of this target
-         * @return distance error
-         */
-        int16_t get_distance_resolution()
-        {
-            return resolution_;
-        }
-
     protected:
         /// @brief X (horizontal) coordinate of the target in relation to the sensor
         int16_t x_ = 0;
@@ -219,9 +201,6 @@ namespace esphome::ld2450
 
         /// @brief sensor reference of the speed sensor
         PollingSensor *speed_sensor_ = nullptr;
-
-        /// @brief sensor reference of the distance resolution sensor
-        PollingSensor *distance_resolution_sensor_ = nullptr;
 
         /// @brief sensor reference of the angle sensor
         PollingSensor *angle_sensor_ = nullptr;

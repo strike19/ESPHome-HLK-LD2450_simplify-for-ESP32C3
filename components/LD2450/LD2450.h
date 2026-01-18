@@ -31,7 +31,6 @@
 #define COMMAND_LEAVE_CONFIG 0xFE
 #define COMMAND_READ_VERSION 0xA0
 #define COMMAND_RESTART 0xA3
-#define COMMAND_FACTORY_RESET 0xA2
 #define COMMAND_READ_TRACKING_MODE 0x91
 #define COMMAND_SINGLE_TRACKING_MODE 0x80
 #define COMMAND_MULTI_TRACKING_MODE 0x90
@@ -42,7 +41,7 @@ namespace esphome::ld2450
 
 #ifdef USE_BUTTON
     /**
-     * @brief Empty button definition used as a template for the restart and factory reset buttons.
+     * @brief Empty button definition used as a template for the restart button.
      */
     class EmptyButton : public button::Button
     {
@@ -72,7 +71,6 @@ namespace esphome::ld2450
 
 #ifdef USE_BUTTON
         SUB_BUTTON(restart)
-        SUB_BUTTON(factory_reset)
 #endif
 
     public:
@@ -142,7 +140,6 @@ namespace esphome::ld2450
 
         /**
          * @brief Sets the margin which used for angle limitations
-         * This margin is added to the min/max tilt angle, such that detected targets still counts as present, even though they are outside of the min/max detection angle. This can be used to reduce flickering.
          * @param angle angle in degrees
          */
         void set_tilt_angle_margin(float angle)
@@ -165,7 +162,6 @@ namespace esphome::ld2450
 
         /**
          * @brief Sets the maximum distance detection margin.
-         * This margin is added to the max detection distance, such that detected targets still counts as present, even though they are outside of the max detection distance. This can be used to reduce flickering.
          * @param distance margin distance in m
          */
         void set_max_distance_margin(float distance)
@@ -224,11 +220,6 @@ namespace esphome::ld2450
         void perform_restart();
 
         /**
-         * @brief Resets the module to it's factory default settings and performs a restart.
-         */
-        void perform_factory_reset();
-
-        /**
          * @brief Set the sensors target tracking mode
          *
          * @param mode true for multi target mode, false for single target tracking mode
@@ -237,7 +228,6 @@ namespace esphome::ld2450
 
         /**
          * @brief Requests the state of switches from the sensor.
-         *
          */
         void read_switch_states();
 
@@ -264,7 +254,7 @@ namespace esphome::ld2450
         void write_command(uint8_t *msg, int len);
 
         /**
-         * @brief Submits a config message for being sent out. If the config command is not acknowledged after a fixed retry count, the command will be discarded.
+         * @brief Submits a config message for being sent out.
          * @param msg Message buffer
          * @param msg Message length
          */
@@ -291,7 +281,7 @@ namespace esphome::ld2450
         /// @brief Determines whether the sensor is in it's configuration mode
         bool configuration_mode_ = false;
 
-        /// @brief Indicated that the sensor is currently factory resetting
+        /// @brief Indicated that the sensor is currently restarting
         bool is_applying_changes_ = false;
 
         /// @brief indicates if the sensor is communicating
@@ -306,7 +296,7 @@ namespace esphome::ld2450
         /// @brief timestamp of the last received message
         uint32_t last_message_received_ = 0;
 
-        /// @brief timestamp at which the last available size change has occurred. Once the rx buffer has overflown it must be cleared manually on some configurations to receive new data
+        /// @brief timestamp at which the last available size change has occurred
         uint32_t last_available_change_ = 0;
 
         /// @brief timestamp of the last attempt to leave config mode if it's not responding
@@ -336,7 +326,7 @@ namespace esphome::ld2450
         /// @brief The maximum detection distance in mm
         int16_t max_detection_distance_ = 6000;
 
-        /// @brief The margin added to the max detection distance in which a detect target still counts as present, even though it is outside of the max detection distance
+        /// @brief The margin added to the max detection distance
         int16_t max_distance_margin_ = 250;
 
         /// @brief List of registered and mock tracking targets

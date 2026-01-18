@@ -1,220 +1,197 @@
-# ESPHome Hi-Link HKL-LD2450 [![CI](https://github.com/TillFleisch/ESPHome-HLK-LD2450/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/TillFleisch/ESPHome-HLK-LD2450/actions/workflows/ci.yaml)
+# ESPHome HLK-LD2450 - Vereinfacht für ESP32-C3
 
-This external [ESPHome](https://esphome.io) component adds support for the [Hi-Link HKL-LD2450](https://www.hlktech.net/index.php?id=1157) Human presence sensor to ESPHome.
-In addition to a basic binary presence sensor, this component adds various different sensors for each detected target and supports custom presence detection Zones.
+Eine vereinfachte ESPHome-Integration für den HLK-LD2450 mmWave Presence Sensor, optimiert für ESP32-C3 Super Mini Boards.
 
-## Recommended configuration
+> **Basiert auf:** [TillFleisch/ESPHome-HLK-LD2450](https://github.com/TillFleisch/ESPHome-HLK-LD2450)
 
-1. Set up a single target with debugging enabled and view the logs (i.e. using `esphome logs`).
-2. Determine the corners of your zones by moving around and taking note of the `x` and `y` coordinates.
-3. Create zones based on these coordinates and add an occupancy sensor to each zone.
-4. Remove the debugging target
+## 🔧 Behobene Bugs
 
-This will give you binary occupancy sensors for individual zones.
-Adding a small `off_delay` filter is recommended for tracking stability.
-Zones can overlap one another. A good use-case example for this is the following:
-Consider a room in which the sensor is mounted, such that it is off-angle with a door. If the sensor can track through the door, this may be undesired behavior.
-Creating a zone that outlines the room can help solve this issue.
+### 1. `is_convex()` Funktion in `__init__.py`
+- **Problem:** Duplizierte Bedingung im Kreuzprodukt-Vergleich für Polygon-Konvexitätsprüfung
+- **Status:** Bug existierte, aber die Zonen-Funktionalität wurde komplett entfernt
 
-![Zone and Margin Sketch](zone_sketch.png)
+### 2. `fast_off_detection` Bug in `target.cpp`
+- **Problem:** Bei `fast_off_detection` wurde `resolution_ != 0` (alter Wert) geprüft statt auch den neuen Wert zu berücksichtigen. Dadurch wurde `last_change_` nicht aktualisiert wenn ein Target erscheint.
+- **Lösung:** Bedingung geändert von:
+  ```cpp
+  if (fast_off_detection_ && resolution_ != 0 && ...)
+  ```
+  zu:
+  ```cpp
+  if (fast_off_detection_ && (resolution != 0 || resolution_ != 0) && ...)
+  ```
 
-This sketch is intended to help understand zones and margins.
-The y-axis is referred to as the axis pointing straight away from the sensor. The x-axis is located perpendicularly. A Target is tracked once it enters the polygon given by the configuration (green polygon within the sketch). Once tracked, a Target is allowed to move freely within the yellow polygon. This larger area is given by the base polygon and the `margin`.
-If a tracked target leaves the yellow area it is not tracked anymore and the zone becomes unoccupied. Additionally, it won't be tracked immediately again since it is now outside of the green zone.
+## ✅ Behaltene Features
 
-## Configuration variables
+### Sensoren (pro Target - max. 3)
+- X Position (Meter)
+- Y Position (Meter)
+- Speed (m/s)
+- Distance (Meter)
+- Angle (Grad)
 
-```yaml
-LD2450:
-  uart_id: uart_bus
-  occupancy:
-    name: Occupancy
+### Globale Sensoren
+- **Occupancy** (binary_sensor) - Anwesenheitserkennung
+- **Target Count** (sensor) - Anzahl erkannter Ziele
+
+### Einstellbare Parameter (Number-Entities)
+- **Max Detection Distance** - Maximale Erkennungsdistanz (0-6m)
+- **Max Tilt Angle** - Maximaler Neigungswinkel (-90° bis 90°)
+- **Min Tilt Angle** - Minimaler Neigungswinkel (-90° bis 90°)
+
+### Steuerung
+- **Tracking Mode Switch** - Multi-Target vs. Single-Target Modus
+- **Restart Button** - Sensor-Neustart
+
+### Optionale Konfiguration
+- `flip_x_axis` - X-Achse spiegeln
+- `fast_off_detection` - Schnelle Erkennung wenn Target verschwindet
+
+## ❌ Entfernte Features
+
+- **Zonen** (komplett) - zone.cpp, zone.h gelöscht
+- **Factory Reset Button** - Entfernt aus LD2450.cpp/h
+- **Bluetooth Switch** - bluetooth_switch.cpp, bluetooth_switch.h gelöscht
+- **Baud Rate Select** - baud_rate_select.cpp, baud_rate_select.h gelöscht
+- **Distance Resolution Sensor** - Aus target.cpp/h entfernt
+
+## 📁 Gelöschte Dateien
+
+```
+components/LD2450/
+├── zone.cpp (gelöscht)
+├── zone.h (gelöscht)
+├── baud_rate_select.cpp (gelöscht)
+├── baud_rate_select.h (gelöscht)
+├── bluetooth_switch.cpp (gelöscht)
+├── bluetooth_switch.h (gelöscht)
+└── __pycache__/ (gelöscht)
 ```
 
-This is the most basic `useful` configuration. You can find [this](examples/basic.yaml) example alongside other more complex examples in the example folder of this repository. An example configuration with all possible sensors and configurations can be found [here](examples/full.yaml).
+## 📶 WiFi Konfiguration für ESP32-C3
 
-### LD2450
-
-- **uart_id**(**Required**, string): ID of the UART-Component connected to the LD2450 Sensor.
-- **name**(**Optional**, string): The name of this sensor, which is used during logging. Defaults to `LD2450`.
-- **flip_x_axis**(**Optional**, boolean): If set to true, values along the X-axis will be flipped. Defaults to `false`.
-- **fast_off_detection**(**Optional**, boolean): If set to true, fast-away detection will be used for targets, which leave the visible range of the sensor. Defaults to `false`.
-- **max_detection_tilt_angle**(**Optional**, number or angle): The highest allowed detection tilt angle. All targets outside this angle will not be tracked. Either a configuration for a number input or a fixed angle value. See: [Max Tilt Angle Number](#max-tilt-angle-number).
-- **min_detection_tilt_angle**(**Optional**, number or angle): The lowest allowed detection tilt angle. All targets outside this angle will not be tracked. Either a configuration for a number input or a fixed angle value. See: [Min Tilt Angle Number](#min-tilt-angle-number).
-- **tilt_angle_margin**(**Optional**, ): The margin which is added to the maximum/minimum allowed tilt angle. Targets that are already being tracked, will still be tracked within the additional margin. This prevents on-off-flickering of related sensors. Defaults to `5°`.
-- **max_detection_distance**(**Optional**, number or distance): The furthest allowed detection distance. All targets further than this distance will not be tracked. Either a configuration for a number input or a fixed distance value. See: [Max Distance Number](#max-distance-number).
-- **max_distance_margin**(**Optional**, ): The margin which is added to the maximum allowed distance. Targets that are already being tracked, will still be tracked within the additional margin. This prevents on-off-flickering of related sensors. Defaults to `25cm`.
-- **occupancy**(**Optional**, binary sensor): A binary sensor, which will be triggered if at least one target is present. `id` or `name` required. All options from [Binary Sensor](https://esphome.io/components/binary_sensor/#config-binary-sensor).
-- **target_count**(**Optional**, sensor): A sensor that provides the number of currently tracked targets. `id` or `name` required. All other options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
-- **restart_button**(**Optional**, button): Restart the connected LD2450 Sensor. All other options from [Button](https://esphome.io/components/button/#config-button).
-- **factory_reset_button**(**Optional**, button): Resets the connected LD2450 Sensor to it's factory default state and restarts the module. All other options from [Button](https://esphome.io/components/button/#config-button).
-- **tracking_mode_switch**(**Optional**, switch): Enables the multiple target tracking mode of the sensor. If disabled, only a single target will be tracked. All other options from [Switch](https://esphome.io/components/switch/#config-switch).
-- **bluetooth_switch**(**Optional**, switch): Enables or disables bluetooth on the LD2450 Sensor. All other options from [Switch](https://esphome.io/components/switch/#config-switch).
-- **baud_rate_select**(**Optional**, select): Select component which sets the sensors baud rate.
-- **targets**(**Optional**, list of targets): A list of at most `3` Targets. Each target has its own configuration and sensors. See [Target](#target).
-- **zones**(**Optional**, list of zones): A list Zones. Each zone has its own configuration and sensors. See [Zone](#zone).
-
-### Max Tilt Angle Number
-
-Instead of a fixed maximum tilt angle, a user-defined number component can be defined. The values of this component will be used as the highest allowed angle.
-
-- **name**(**Required**, string): Name of the maximum tilt angle number component.
-- **initial_value**(**Optional**, distance): The initial value of this sensor. Defaults to `90°` - required unit is `°` or `deg`. This value will be ignored if `restore_value` is enabled.
-- **step**(**Optional**, distance): Step size of the input number. Defaults to `1°`.
-- **restore_value**(**Optional**, boolean): Tries to restore the last value from Flash upon reboot. Defaults to `true`.
-
-All other options from [number](https://esphome.io/components/number/#base-number-configuration).
-
-### Min Tilt Angle Number
-
-Instead of a fixed minimum tilt angle, a user-defined number component can be defined. The values of this component will be used as the highest allowed angle.
-
-- **name**(**Required**, string): Name of the minimum tilt angle number component.
-- **initial_value**(**Optional**, distance): The initial value of this sensor. Defaults to `-90°` - required unit is `°` or `deg`. This value will be ignored if `restore_value` is enabled.
-- **step**(**Optional**, distance): Step size of the input number. Defaults to `1°`.
-- **restore_value**(**Optional**, boolean): Tries to restore the last value from Flash upon reboot. Defaults to `true`.
-
-All other options from [number](https://esphome.io/components/number/#base-number-configuration).
-
-### Max Distance Number
-
-Instead of a fixed maximum distance, a user-defined number component can be defined. The values of this component will be used as the furthest allowed distance.
-
-- **name**(**Required**, string): Name of the maximum distance number component.
-- **initial_value**(**Optional**, distance): The initial value of this sensor. Defaults to `6m`. This value will be ignored if `restore_value` is enabled.
-- **step**(**Optional**, distance): Step size of the input number. Defaults to `10cm`.
-- **restore_value**(**Optional**, boolean): Tries to restore the last value from Flash upon reboot. Defaults to `true`.
-
-All other options from [number](https://esphome.io/components/number/#base-number-configuration).
-
-### Target
-
-The name of target sub-sensor will be prefixed with the target name. For instance, if the Target is called `Target 1` and a sub-sensor of this target is named `X Position`, the actual name of the Sensor will be `Target 1 X Position`.
-Each sensor requires at least an `id` or a `name` configuration.
-The default polling rate is `1s`. If you end up using these sensors I would recommend excluding them from your [Home Assistant Recorder](https://www.home-assistant.io/integrations/recorder/#exclude).
-
-- **name**(**Optional**, string): The name of the target. This name will be used as a prefix for sub-sensors. Per default, targets will be named `Target x` with increasing values for `x`.
-- **debug**(**Optional**, boolean): Enables debugging for this target. The raw sensor values for this target will be logged periodically. Defaults to `false`.
-- **x_position**(**Optional**, sensor): A sensor that reports the X Position of the target. The default name is `X Position`. All other options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
-- **y_position**(**Optional**, sensor): A sensor that reports the Y Position of the target. The default name is `Y Position`. All other options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
-- **speed**(**Optional**, sensor): A sensor that reports the measured speed of the target in `m/s`. The default name is `Speed`. All other options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
-- **distance_resolution**(**Optional**, sensor): A sensor that reports the reported distance resolution of the target. The default name is `Distance Resolution`. All other options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
-- **angle**(**Optional**, sensor): A sensor that reports the angle of the target in relation to the sensor in `°`. The default name is `Angle`. All other options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
-- **distance**(**Optional**, sensor): A sensor that reports the distance from the target to the sensor in `m`. The default name is `Distance`. All other options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
-
-A valid configuration may look like [this](examples/target_sensors.yaml) or this:
+Das ESP32-C3 Super Mini hatte ein bekanntes Problem mit -127 dB WiFi-Signal. Diese optimierte Konfiguration behebt das:
 
 ```yaml
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  output_power: 8.5dBm     # Kritisch für ESP32-C3 Mini!
+  power_save_mode: NONE    # Kein Power-Save für stabile Verbindung
+  fast_connect: true       # Schnellere Verbindung
+```
+
+## 🔐 Secrets Konfiguration
+
+### 1. Example-Datei kopieren
+```bash
+cp example-secrets.yaml secrets.yaml
+```
+
+### 2. secrets.yaml ausfüllen
+```yaml
+# WiFi
+wifi_ssid: "DEIN_WLAN_NAME"
+wifi_password: "DEIN_WLAN_PASSWORT"
+
+# MQTT (für ioBroker)
+mqtt_broker: "192.168.1.100"
+mqtt_username: "mqtt_user"
+mqtt_password: "mqtt_password"
+
+# API & OTA
+api_password: "api_passwort"
+ota_password: "ota_passwort"
+ap_password: "fallback_passwort"
+```
+
+> **Hinweis:** `secrets.yaml` ist in `.gitignore` und wird nicht eingecheckt!
+
+## 🚀 Installation
+
+### 1. Repository klonen
+```bash
+git clone https://github.com/strike19/ESPHome-HLK-LD2450_simplify-for-ESP32C3
+cd ESPHome-HLK-LD2450_simplify-for-ESP32C3
+```
+
+### 2. Secrets erstellen
+```bash
+cp example-secrets.yaml secrets.yaml
+# secrets.yaml mit deinen Daten ausfüllen
+```
+
+### 3. Beispiel-Konfiguration verwenden
+```bash
+esphome run examples/esp32c3_mqtt_minimal.yaml
+```
+
+## 📄 Beispiel-Konfiguration
+
+Siehe `examples/esp32c3_mqtt_minimal.yaml` für eine vollständige, minimale Konfiguration.
+
+### Minimale YAML-Konfiguration
+
+```yaml
+external_components:
+  - source:
+      type: local
+      path: components
+
+uart:
+  id: uart_ld2450
+  tx_pin: GPIO21
+  rx_pin: GPIO20
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+
+LD2450:
+  uart_id: uart_ld2450
+  name: "Presence"
+  fast_off_detection: true
+  
+  occupancy:
+    name: "Occupancy"
+  
+  target_count:
+    name: "Target Count"
+  
   targets:
     - target:
-        debug: true
+        name: "Target 1"
+        x_position:
+        y_position:
+        speed:
+        distance:
         angle:
-            id: t1_angle
+
+  max_detection_distance:
+    name: "Max Distance"
+    initial_value: 6m
+    
+  tracking_mode_switch:
+    name: "Multi-Target Mode"
+  
+  restart_button:
+    name: "Restart Sensor"
 ```
 
-### Zone
+## 🔌 Hardware-Verbindung
 
-The name of zone sub-sensor will be prefixed with the zone name. For instance, if the zone is called `Dining Table` and a sub-sensor of this zone is named `Occupancy`, the actual name of the Sensor will be `Dining Table Occupancy`.
+### ESP32-C3 Super Mini → HLK-LD2450
 
-- **name**(**Required**, string): The name of the zone. This name will be used as a prefix for sub-sensors.
-- **polygon**(**Required**, polygon): A simple convex polygon with at least 3 vertices or a template polygon. See [Polygon](#polygon).
-- **margin**(**Optional**, distance): The margin that is added to the zone. Targets that are already being tracked, will still be tracked within the additional margin. This prevents on-off-flickering of related sensors. Defaults to `25cm`.
-- **target_timeout**(**Optional**, time): The time after which a target within the zone is considered absent. This helps with continuous detection of non-moving targets. Targets which leave the zone via polygon boundaries are still detected as absent form the zone immediately. Defaults to `5s`.
-- **occupancy**(**Optional**, binary sensor): A binary sensor, that will be triggered if at least one target is tracked inside the zone. `id` or `name` required. The default name is empty, which results in the sensor being named after the zone. All options from [Binary Sensor](https://esphome.io/components/binary_sensor/#config-binary-sensor).
-- **target_count**(**Optional**, sensor): A sensor that provides the number of currently tracked targets within the zone. `id` or `name` required. The default name is empty, which results in the sensor being named after the zone. All options from [Sensor](https://esphome.io/components/sensor/#config-sensor).
+| ESP32-C3 | LD2450 |
+|----------|--------|
+| GPIO21 (TX) | RX |
+| GPIO20 (RX) | TX |
+| 3.3V | VCC |
+| GND | GND |
 
-A valid configuration may look like [this](examples/zones.yaml) or this:
+## 📝 Lizenz
 
-```yaml
-  zones:
-    - zone:
-        name: "Dining table"
-        margin: 25cm
-        polygon:
-          - point:
-          ...
-        occupancy:
-          id: or_occupancy
-        target_count:
-          id: or_target_count
-```
+MIT License - siehe [LICENCE](LICENCE)
 
-### Polygon
+## 🙏 Credits
 
-A polygon is made up of multiple points in physical space. The polygon must be a simple convex polygon.
-
-- **x**(**Required**, distance): Distance along the `x-axis` from the sensor.
-- **y**(**Required**, distance): Distance along the `y-axis` from the sensor.
-
-A valid configuration may look like [this](examples/zones.yaml) or this:
-
-```yaml
-        # Polygon which covers one half of the sensor
-        polygon:
-          - point:
-              x: 0m
-              y: 0m
-          - point:
-              x: 0m
-              y: 6m
-          - point:
-              x: 6m
-              y: 6m
-          - point:
-              x: 6m
-              y: 0m
-```
-
-Alternatively, a polygon can also be defined via a template expression like this:
-
-```yaml
-        # Template polygon which updated every 2 seconds
-        polygon:
-          lambda: !lambda |-
-            return {ld2450::Point(1500,10), ld2450::Point(6000,10), ld2450::Point(6000,2600), ld2450::Point(-1500,2600)};
-          update_interval: 2s
-```
-
-- **lambda**(**Required**, `return std::vector<ld2450::Point>;`): List of Points which make up a convex polygon. The expression is evaluated every `update_interval`, if the provided polygon is invalid (i.e. not convex or too small) the previously used polygon is kept.
-- **update_interval**(**Optional**, time): Interval in which the template polygon is evaluated. Set to `0s` to disable. Defaults to `1s`.
-
-### LD2450.zone.update_polygon
-
-The polygon used by a zone can be updated with the `zone.update_polygon` action.
-The change is only effective, if the provided polygon is valid.
-
-```yaml
-on_...:
-  - LD2450.zone.update_polygon:
-      id: z4
-      polygon: !lambda |-
-        return {ld2450::Point(1500,10), ld2450::Point(6000,10), ld2450::Point(6000,2600), ld2450::Point(-1500,2600)};
-```
-
-- **id**(**Required**, id): Id of the zone which should be updated
-- **polygon**(**Required**, `return std::vector<ld2450::Point>;`): List of Points which make up a convex polygon. The new polygon is only used if it's valid.
-
-With the help of this action, a user editable dynamic polygon can be defined.
-Note, that this allows for the definition of non-convex polygons. In the referenced example, the number components are only updated if the new polygon is valid.
-When using the Home Assistant front end, number sliders may not reflect this change (or rather lack thereof) properly.
-A partial example configuration for dynamic template polygons can be found [here](examples/editable_template_polygon.yaml).
-
-## Troubleshooting
-
-When using Dupont connectors make sure they make proper contact. The very short pins on the LD2450 Sensor can easily go loose or break.
-
-I recommend using a `5V` power supply and the `5V` input pin whenever possible.
-Using the the `3.3V` pin on the LD2450 sensor may cause instabilities during operation depending on the power supply, voltage regulator and other components used on the same power circuit.
-In a test scenario using a `3.3V` voltage regulator, an ESP-01 and a DHT22 the LD2450 sensor was not able to provide measurements. Observing the LD2450's TX pin using an oscilloscope yielded no updates and noisy behavior around `3.3V`. Switching to `5V` on the LD2450 sensor resolved this issue and consistent updates from the sensor were observed.
-In a different scenario, when using `3.3V` provided by an ESP32 development board, sensor updates arrived inconsistently/went missing.
-
-In some configurations, this LD2450 component may not perform ideally. If this component is used in combination with other components on a single ESP, especially ones that require long processing times, some updates provided by the sensor may be missed. As a symptom (zone) count sensors may report as `Unknown` for short periods of time and switches become unresponsive.
-If this is the case try the following steps:
-
-- increase `rx_buffer_size`
-- use a minimal ESPHome yaml configuration for troubleshooting
-- use a reliable `5V` power source for the sensor
-
-## Known limitations
-
-The `internal` property has no effect on zone/target-count configs if they don't provide a name. For these entities, `internal` will be `True`. To change this value, a name must added to the respective sensors.
+- Ursprüngliches Repository: [TillFleisch/ESPHome-HLK-LD2450](https://github.com/TillFleisch/ESPHome-HLK-LD2450)
