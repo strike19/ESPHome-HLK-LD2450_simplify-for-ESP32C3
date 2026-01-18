@@ -1,22 +1,22 @@
 #pragma once
-
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/helpers.h"
 #include "target.h"
-#include "zone.h"
 #include "tracking_mode_switch.h"
-#include "bluetooth_switch.h"
-#include "baud_rate_select.h"
+
 #ifdef USE_BINARY_SENSOR
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #endif
+
 #ifdef USE_SENSOR
 #include "esphome/components/sensor/sensor.h"
 #endif
+
 #ifdef USE_NUMBER
 #include "esphome/components/number/number.h"
 #endif
+
 #ifdef USE_BUTTON
 #include "esphome/components/button/button.h"
 #endif
@@ -24,7 +24,6 @@
 #define SENSOR_UNAVAILABLE_TIMEOUT 4000
 #define CONFIG_RECOVERY_INTERVAL 60000
 #define POST_RESTART_LOCKOUT_DELAY 2000
-
 #define COMMAND_MAX_RETRIES 10
 #define COMMAND_RETRY_DELAY 100
 
@@ -33,44 +32,13 @@
 #define COMMAND_READ_VERSION 0xA0
 #define COMMAND_RESTART 0xA3
 #define COMMAND_FACTORY_RESET 0xA2
-
 #define COMMAND_READ_TRACKING_MODE 0x91
 #define COMMAND_SINGLE_TRACKING_MODE 0x80
 #define COMMAND_MULTI_TRACKING_MODE 0x90
 
-#define COMMAND_READ_MAC 0xA5
-#define COMMAND_BLUETOOTH 0xA4
-
-#define COMMAND_SET_BAUD_RATE 0xA1
-
 namespace esphome::ld2450
 {
-
-    enum BaudRate
-    {
-        BAUD_9600 = 0x01,
-        BAUD_19200 = 0x02,
-        BAUD_38400 = 0x03,
-        BAUD_57600 = 0x04,
-        BAUD_115200 = 0x05,
-        BAUD_230400 = 0x06,
-        BAUD_256000 = 0x07,
-        BAUD_460800 = 0x08,
-    };
-
-    static const std::map<std::string, BaudRate> BAUD_STRING_TO_ENUM{
-        {"9600", BAUD_9600},
-        {"19200", BAUD_19200},
-        {"38400", BAUD_38400},
-        {"57600", BAUD_57600},
-        {"115200", BAUD_115200},
-        {"230400", BAUD_230400},
-        {"256000", BAUD_256000},
-        {"460800", BAUD_460800}};
-
     class TrackingModeSwitch;
-    class BluetoothSwitch;
-    class BaudRateSelect;
 
 #ifdef USE_BUTTON
     /**
@@ -91,18 +59,22 @@ namespace esphome::ld2450
 #ifdef USE_BINARY_SENSOR
         SUB_BINARY_SENSOR(occupancy)
 #endif
+
 #ifdef USE_SENSOR
         SUB_SENSOR(target_count)
 #endif
+
 #ifdef USE_NUMBER
         SUB_NUMBER(max_distance)
         SUB_NUMBER(max_angle)
         SUB_NUMBER(min_angle)
 #endif
+
 #ifdef USE_BUTTON
         SUB_BUTTON(restart)
         SUB_BUTTON(factory_reset)
 #endif
+
     public:
         void setup() override;
         void loop() override;
@@ -127,14 +99,6 @@ namespace esphome::ld2450
         }
 
         /**
-         * @brief Adds a zone to the list of registered zones.
-         */
-        void register_zone(Zone *zone)
-        {
-            zones_.push_back(zone);
-        }
-
-        /**
          * @brief Sets the x axis inversion flag
          * @param flip true if the x axis should be flipped, false otherwise
          */
@@ -145,7 +109,7 @@ namespace esphome::ld2450
 
         /**
          * @brief Sets the fast of detection flag, which determines how the unoccupied state is determined.
-         * @param value true if the x axis flipped
+         * @param value true if fast off detection is enabled
          */
         void set_fast_off_detection(bool value)
         {
@@ -171,7 +135,7 @@ namespace esphome::ld2450
          */
         float set_min_tilt_angle(float angle)
         {
-            if (!std ::isnan(angle))
+            if (!std::isnan(angle))
                 min_detection_tilt_angle_ = std::min(std::max(angle, -90.0f), max_detection_tilt_angle_ - 1.0f);
             return min_detection_tilt_angle_;
         }
@@ -183,7 +147,7 @@ namespace esphome::ld2450
          */
         void set_tilt_angle_margin(float angle)
         {
-            if (!std ::isnan(angle))
+            if (!std::isnan(angle))
                 tilt_angle_margin_ = angle;
         }
 
@@ -194,7 +158,7 @@ namespace esphome::ld2450
          */
         float set_max_distance(float distance)
         {
-            if (!std ::isnan(distance))
+            if (!std::isnan(distance))
                 max_detection_distance_ = int(distance * 1000);
             return distance;
         }
@@ -206,7 +170,7 @@ namespace esphome::ld2450
          */
         void set_max_distance_margin(float distance)
         {
-            if (!std ::isnan(distance))
+            if (!std::isnan(distance))
                 max_distance_margin_ = int(distance * 1000);
         }
 
@@ -218,26 +182,6 @@ namespace esphome::ld2450
         void set_tracking_mode_switch(TrackingModeSwitch *switch_)
         {
             tracking_mode_switch_ = switch_;
-        }
-
-        /**
-         * @brief Set the bluetooth switch for this sensor
-         *
-         * @param switch_ switch reference
-         */
-        void set_bluetooth_switch(BluetoothSwitch *switch_)
-        {
-            bluetooth_switch_ = switch_;
-        }
-
-        /**
-         * @brief Set the baud rate selector reference on this sensor
-         *
-         * @param select select component reference
-         */
-        void set_baud_rate_select(BaudRateSelect *select)
-        {
-            baud_rate_select_ = select;
         }
 
         /**
@@ -255,7 +199,7 @@ namespace esphome::ld2450
          */
         Target *get_target(int i)
         {
-            if (i < 0 && i >= targets_.size())
+            if (i < 0 || i >= targets_.size())
                 return nullptr;
             return targets_[i];
         }
@@ -275,11 +219,6 @@ namespace esphome::ld2450
         void log_sensor_version();
 
         /**
-         * @brief Reads and logs the sensors mac address.
-         */
-        void log_bluetooth_mac();
-
-        /**
          * @brief Restarts the sensor module
          */
         void perform_restart();
@@ -297,24 +236,10 @@ namespace esphome::ld2450
         void set_tracking_mode(bool mode);
 
         /**
-         * @brief Set the bluetooth state on the sensor
-         *
-         * @param state true if bluetooth should be enabled, false otherwise
-         */
-        void set_bluetooth_state(bool state);
-
-        /**
          * @brief Requests the state of switches from the sensor.
          *
          */
         void read_switch_states();
-
-        /**
-         * @brief Set the sensors baud rate
-         *
-         * @param baud_rate New Baud Rate
-         */
-        void set_baud_rate(BaudRate baud_rate);
 
     protected:
         /**
@@ -417,16 +342,8 @@ namespace esphome::ld2450
         /// @brief List of registered and mock tracking targets
         std::vector<Target *> targets_;
 
-        /// @brief List of registered zones
-        std::vector<Zone *> zones_;
-
         /// @brief Tracking mode switch which enables/disables multi-target tracking
         TrackingModeSwitch *tracking_mode_switch_ = nullptr;
-
-        /// @brief Sensor Bluetooth switch which enables/disables bluetooth on the sensor
-        BluetoothSwitch *bluetooth_switch_ = nullptr;
-
-        /// @brief Select options used for setting the sensors baud rate
-        BaudRateSelect *baud_rate_select_ = nullptr;
     };
+
 } // namespace esphome::ld2450
