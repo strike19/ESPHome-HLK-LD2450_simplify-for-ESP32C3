@@ -17,7 +17,6 @@ namespace esphome::ld2450
         LOG_SENSOR("  ", "X Position", x_position_sensor_);
         LOG_SENSOR("  ", "Y Position", y_position_sensor_);
         LOG_SENSOR("  ", "Speed", speed_sensor_);
-        LOG_SENSOR("  ", "Distance Resolution", distance_resolution_sensor_);
         LOG_SENSOR("  ", "Angle", angle_sensor_);
         LOG_SENSOR("  ", "Distance", distance_sensor_);
     }
@@ -38,7 +37,8 @@ namespace esphome::ld2450
 
     void Target::update_values(int16_t x, int16_t y, int16_t speed, int16_t resolution)
     {
-        if (fast_off_detection_ && resolution_ != 0 &&
+        // Fixed: Check both old AND new resolution to handle target appearance
+        if (fast_off_detection_ && (resolution != 0 || resolution_ != 0) &&
             (x != x_ || y != y_ || speed != speed_ || resolution != resolution_))
             last_change_ = millis();
         x_ = x;
@@ -54,8 +54,6 @@ namespace esphome::ld2450
             y_position_sensor_->set_value(present ? y_ : NAN);
         if (speed_sensor_ != nullptr)
             speed_sensor_->set_value(present ? speed_ : NAN);
-        if (distance_resolution_sensor_ != nullptr)
-            distance_resolution_sensor_->set_value(present ? resolution_ : NAN);
         if (angle_sensor_ != nullptr)
         {
             float angle = atan2(y, x) * (180 / M_PI) - 90;

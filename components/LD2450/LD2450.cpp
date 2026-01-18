@@ -39,9 +39,6 @@ namespace esphome::ld2450
         if (restart_button_ != nullptr)
             restart_button_->add_on_press_callback([this]()
                                                    { this->perform_restart(); });
-        if (factory_reset_button_ != nullptr)
-            factory_reset_button_->add_on_press_callback([this]()
-                                                         { this->perform_factory_reset(); });
 #endif
         // Acquire current switch states and update related components
         read_switch_states();
@@ -67,23 +64,11 @@ namespace esphome::ld2450
 #endif
 #ifdef USE_BUTTON
         LOG_BUTTON("  ", "RestartButton", restart_button_);
-        LOG_BUTTON("  ", "FactoryResetButton", factory_reset_button_);
 #endif
         LOG_SWITCH("  ", "TrackingModeSwitch", tracking_mode_switch_);
-        LOG_SWITCH("  ", "BluetoothSwitch", bluetooth_switch_);
-        LOG_SELECT("  ", "BaudRateSelect", baud_rate_select_);
-        ESP_LOGCONFIG(TAG, "Zones:");
-        if (zones_.size() > 0)
-        {
-            for (Zone *zone : zones_)
-            {
-                zone->dump_config();
-            }
-        }
 
         // Read and log Firmware-version
         log_sensor_version();
-        log_bluetooth_mac();
     }
 
     const uint8_t update_header[4] = {0xAA, 0xFF, 0x03, 0x00};
@@ -250,12 +235,6 @@ namespace esphome::ld2450
                 target_count_sensor_->publish_state(NAN);
 #endif
 
-            // Update zones and related components (unavailable)
-            for (Zone *zone : zones_)
-            {
-                zone->update(targets_, sensor_available_);
-            }
-
             // Update targets and related components (unavailable)
             for (Target *target : targets_)
             {
@@ -348,12 +327,6 @@ namespace esphome::ld2450
         if (target_count_sensor_ != nullptr && target_count_sensor_->raw_state != target_count)
             target_count_sensor_->publish_state(target_count);
 #endif
-
-        // Update zones and related components
-        for (Zone *zone : zones_)
-        {
-            zone->update(targets_, sensor_available_);
-        }
     }
 
     void LD2450::process_config_message(uint8_t *msg, int len)
@@ -377,7 +350,7 @@ namespace esphome::ld2450
             configuration_mode_ = false;
         }
 
-        if ((msg[0] == COMMAND_FACTORY_RESET || msg[0] == COMMAND_RESTART) && msg[1] == true)
+        if (msg[0] == COMMAND_RESTART && msg[1] == true)
         {
             configuration_mode_ = false;
 
@@ -389,25 +362,6 @@ namespace esphome::ld2450
         if (msg[0] == COMMAND_READ_VERSION && msg[1] == true)
         {
             ESP_LOGI(TAG, "Sensor Firmware-Version: V%X.%02X.%02X%02X%02X%02X", msg[7], msg[6], msg[11], msg[10], msg[9], msg[8]);
-        }
-
-        if (msg[0] == COMMAND_READ_MAC && msg[1] == true)
-        {
-
-            bool bt_enabled = !(msg[4] == 0x08 && msg[5] == 0x05 && msg[6] == 0x04 && msg[7] == 0x03 && msg[8] == 0x02 && msg[9] == 0x01);
-            if (bluetooth_switch_ != nullptr)
-            {
-                bluetooth_switch_->publish_state(bt_enabled);
-            }
-
-            if (bt_enabled)
-            {
-                ESP_LOGI(TAG, "Sensor MAC-Address: %02X:%02X:%02X:%02X:%02X:%02X", msg[4], msg[5], msg[6], msg[7], msg[8], msg[9]);
-            }
-            else
-            {
-                ESP_LOGI(TAG, "Sensor MAC-Address: Bluetooth disabled!");
-            }
         }
 
         if (msg[0] == COMMAND_READ_TRACKING_MODE && msg[1] == true)
@@ -424,24 +378,11 @@ namespace esphome::ld2450
         send_config_message(read_version, 2);
     }
 
-    void LD2450::log_bluetooth_mac()
-    {
-        const uint8_t read_mac[4] = {COMMAND_READ_MAC, 0x00, 0x01, 0x00};
-        send_config_message(read_mac, 4);
-    }
-
     void LD2450::perform_restart()
     {
         const uint8_t restart[2] = {COMMAND_RESTART, 0x00};
         send_config_message(restart, 2);
         read_switch_states();
-    }
-
-    void LD2450::perform_factory_reset()
-    {
-        const uint8_t reset[2] = {COMMAND_FACTORY_RESET, 0x00};
-        send_config_message(reset, 2);
-        perform_restart();
     }
 
     void LD2450::set_tracking_mode(bool mode)
@@ -461,25 +402,10 @@ namespace esphome::ld2450
         send_config_message(request_tracking_mode, 2);
     }
 
-    void LD2450::set_bluetooth_state(bool state)
-    {
-        const uint8_t set_bt[4] = {COMMAND_BLUETOOTH, 0x00, state, 0x00};
-        send_config_message(set_bt, 4);
-        perform_restart();
-    }
-
     void LD2450::read_switch_states()
     {
         const uint8_t request_tracking_mode[2] = {COMMAND_READ_TRACKING_MODE, 0x00};
         send_config_message(request_tracking_mode, 2);
-        log_bluetooth_mac();
-    }
-
-    void LD2450::set_baud_rate(BaudRate baud_rate)
-    {
-        const uint8_t set_baud_rate[4] = {COMMAND_SET_BAUD_RATE, 0x00, baud_rate, 0x00};
-        send_config_message(set_baud_rate, 4);
-        perform_restart();
     }
 
     void LD2450::write_command(uint8_t *msg, int len)
