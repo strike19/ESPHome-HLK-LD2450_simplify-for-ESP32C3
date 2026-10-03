@@ -51,7 +51,9 @@ Grundlage ist der ESPHome-Stil (Google C++ Style Guide mit Anpassungen). Wo
   Enums `UpperCamelCase`; Konstanten `UPPER_SNAKE_CASE`.
 - **Member:** `lower_snake_case_` mit Unterstrich am Ende. SOLL `protected` statt
   `private` sein, außer bei echten Implementierungsdetails.
-- **Zugriff:** Auf Member SOLL mit `this->` zugegriffen werden (ESPHome-Konvention).
+- **Zugriff:** ESPHome nutzt `this->` für Member. In diesem Fork wird das nur in
+  neuem Code verwendet; bestehender Code wird nicht massenhaft umgestellt, um
+  Merges mit dem Upstream nicht zu erschweren.
 - **Konstanten:** SOLLEN als `static constexpr`/`const` definiert werden, nicht
   per `#define`. `#define` nur für bedingte Kompilierung oder Werte, die der
   Python-Codegen erzeugt.
