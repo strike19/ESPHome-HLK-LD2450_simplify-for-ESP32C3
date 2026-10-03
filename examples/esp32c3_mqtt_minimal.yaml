@@ -43,7 +43,8 @@ mqtt:
 
 # OTA Updates
 ota:
-  password: !secret ota_password
+  - platform: esphome
+    password: !secret ota_password
 
 # Captive Portal für Fallback
 captive_portal:
@@ -61,7 +62,7 @@ uart:
 external_components:
   - source:
       type: local
-      path: components
+      path: ../components
 
 # LD2450 Sensor Konfiguration
 LD2450:

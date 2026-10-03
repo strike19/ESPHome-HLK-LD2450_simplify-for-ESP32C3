@@ -1,7 +1,7 @@
 # This exmaple configuration will pollute your smart home instance. 
 
 external_components:
-  - source: github://TillFleisch/ESPHome-HLK-LD2450@main
+  - source: github://strike19/ESPHome-HLK-LD2450_simplify-for-ESP32C3@main
 
 uart:
   id: uart_bus
@@ -37,17 +37,8 @@ LD2450:
   
   restart_button:
     name: "Restart Sensor"
-  factory_reset_button:
-    name: "Factory Reset Sensor"
-
   tracking_mode_switch:
     name: "Multiple Target Tracking"
-  bluetooth_switch:
-    name: "Sensor Bluetooth"
-
-  baud_rate_select:
-    name: "Sensor Baud Rate"
-
   occupancy:
     name: Occupancy
   target_count:
@@ -64,8 +55,6 @@ LD2450:
             id: t1_ypos
         speed:
             id: t1_speed
-        distance_resolution:
-            id: t1_res
         angle:
             id: t1_angle
         distance:
@@ -78,8 +67,6 @@ LD2450:
             id: t2_ypos
         speed:
             id: t2_speed
-        distance_resolution:
-            id: t2_res
         angle:
             id: t2_angle
         distance:
@@ -92,49 +79,7 @@ LD2450:
             id: t3_ypos
         speed:
             id: t3_speed
-        distance_resolution:
-            id: t3_res
         angle:
             id: t3_angle
         distance:
             id: t3_distance
-  zones:
-    - zone:
-        name: "Office Right"
-        polygon:
-          - point:
-              x: 0m
-              y: 0m
-          - point:
-              x: 0m
-              y: 600cm
-          - point:
-              x: 6m
-              y: 6m
-          - point:
-              x: 6m
-              y: 0m
-        occupancy:
-          id: z1_occupancy
-        target_count:
-          id: z1_target_count
-    - zone:
-        name: "Office Left"
-        margin: 0.4m
-        polygon:
-          - point:
-              x: -0m
-              y: 0m
-          - point:
-              x: -0m
-              y: 6m
-          - point:
-              x: -6m
-              y: 6m
-          - point:
-              x: -6m
-              y: 0m
-        occupancy:
-          id: z2_occupancy
-        target_count:
-          id: z2_target_count

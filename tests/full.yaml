@@ -43,16 +43,9 @@ LD2450:
 
   restart_button:
     name: "Restart Sensor"
-  factory_reset_button:
-    name: "Factory Reset Sensor"
 
   tracking_mode_switch:
     name: "Multiple Target Tracking"
-  bluetooth_switch:
-    name: "Sensor Bluetooth"
-
-  baud_rate_select:
-    name: "Sensor Baud Rate"
 
   occupancy:
     name: Occupancy
@@ -70,8 +63,6 @@ LD2450:
           id: t1_ypos
         speed:
           id: t1_speed
-        distance_resolution:
-          id: t1_res
         angle:
           id: t1_angle
         distance:
@@ -84,8 +75,6 @@ LD2450:
           id: t2_ypos
         speed:
           id: t2_speed
-        distance_resolution:
-          id: t2_res
         angle:
           id: t2_angle
         distance:
@@ -98,84 +87,7 @@ LD2450:
           id: t3_ypos
         speed:
           id: t3_speed
-        distance_resolution:
-          id: t3_res
         angle:
           id: t3_angle
         distance:
           id: t3_distance
-  zones:
-    - zone:
-        name: "Office Right"
-        polygon:
-          - point:
-              x: 0m
-              y: 0m
-          - point:
-              x: 0m
-              y: 600cm
-          - point:
-              x: 6m
-              y: 6m
-          - point:
-              x: 6m
-              y: 0m
-        occupancy:
-          id: z1_occupancy
-        target_count:
-          id: z1_target_count
-    - zone:
-        name: "Office Left"
-        margin: 0.4m
-        polygon:
-          - point:
-              x: -0m
-              y: 0m
-          - point:
-              x: -0m
-              y: 6m
-          - point:
-              x: -6m
-              y: 6m
-          - point:
-              x: -6m
-              y: 0m
-        occupancy:
-          id: z2_occupancy
-        target_count:
-          id: z2_target_count
-
-    - zone:
-        name: "Template1"
-        margin: 0.4m
-        polygon:
-          lambda: !lambda |-
-            return {ld2450::Point(1500,10), ld2450::Point(6000,10), ld2450::Point(6000,2600), ld2450::Point(-1500,2600)};
-          update_interval: 2s
-        occupancy:
-          id: z3_occupancy
-
-    - zone:
-        name: "Template2"
-        polygon:
-          lambda: !lambda |-
-            return {ld2450::Point(1500,10), ld2450::Point(6000,10), ld2450::Point(6000,2600), ld2450::Point(-1500,2600)};
-
-    - zone:
-        name: "Template3"
-        id: zone_template_3
-        polygon:
-          lambda: !lambda |-
-            return {};
-          update_interval: 0s
-        occupancy:
-          id: z5_occupancy
-
-button:
-  - platform: template
-    name: Update polygon
-    on_press:
-      - LD2450.zone.update_polygon:
-          id: zone_template_3
-          polygon: !lambda |-
-            return {ld2450::Point(1500,10), ld2450::Point(6000,10), ld2450::Point(6000,2600), ld2450::Point(-1500,2600)};

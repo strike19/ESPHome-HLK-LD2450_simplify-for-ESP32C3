@@ -1,5 +1,5 @@
 external_components:
-  - source: github://TillFleisch/ESPHome-HLK-LD2450@main
+  - source: github://strike19/ESPHome-HLK-LD2450_simplify-for-ESP32C3@main
 
 uart:
   id: uart_bus
