@@ -21,22 +21,27 @@
 #include "esphome/components/button/button.h"
 #endif
 
-#define SENSOR_UNAVAILABLE_TIMEOUT 4000
-#define CONFIG_RECOVERY_INTERVAL 60000
-#define POST_RESTART_LOCKOUT_DELAY 2000
-#define COMMAND_MAX_RETRIES 10
-#define COMMAND_RETRY_DELAY 100
-
-#define COMMAND_ENTER_CONFIG 0xFF
-#define COMMAND_LEAVE_CONFIG 0xFE
-#define COMMAND_READ_VERSION 0xA0
-#define COMMAND_RESTART 0xA3
-#define COMMAND_READ_TRACKING_MODE 0x91
-#define COMMAND_SINGLE_TRACKING_MODE 0x80
-#define COMMAND_MULTI_TRACKING_MODE 0x90
-
 namespace esphome::ld2450
 {
+    /// Time without sensor updates after which the sensor is considered unavailable [ms]
+    static constexpr uint32_t SENSOR_UNAVAILABLE_TIMEOUT = 4000;
+    /// Interval at which leaving the config mode is retried while the sensor is silent [ms]
+    static constexpr uint32_t CONFIG_RECOVERY_INTERVAL = 60000;
+    /// Time after applying changes (e.g. a restart) during which the sensor is left alone [ms]
+    static constexpr uint32_t POST_RESTART_LOCKOUT_DELAY = 2000;
+    static constexpr uint8_t COMMAND_MAX_RETRIES = 10;
+    /// Delay between command retries [ms]
+    static constexpr uint32_t COMMAND_RETRY_DELAY = 100;
+
+    // Command words of the LD2450 serial protocol
+    static constexpr uint8_t COMMAND_ENTER_CONFIG = 0xFF;
+    static constexpr uint8_t COMMAND_LEAVE_CONFIG = 0xFE;
+    static constexpr uint8_t COMMAND_READ_VERSION = 0xA0;
+    static constexpr uint8_t COMMAND_RESTART = 0xA3;
+    static constexpr uint8_t COMMAND_READ_TRACKING_MODE = 0x91;
+    static constexpr uint8_t COMMAND_SINGLE_TRACKING_MODE = 0x80;
+    static constexpr uint8_t COMMAND_MULTI_TRACKING_MODE = 0x90;
+
     class TrackingModeSwitch;
 
 #ifdef USE_BUTTON

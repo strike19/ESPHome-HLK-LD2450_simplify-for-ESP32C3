@@ -4,11 +4,13 @@
 #include "esphome/core/hal.h"
 #include "polling_sensor.h"
 
-#define DEBUG_FREQUENCY 1000
-#define FAST_OFF_THRESHOLD 100
-
 namespace esphome::ld2450
 {
+    /// Interval of the raw value debug output [ms]
+    static constexpr uint32_t DEBUG_FREQUENCY = 1000;
+    /// Time without target changes after which a target counts as gone when fast off detection is enabled [ms]
+    static constexpr uint32_t FAST_OFF_THRESHOLD = 100;
+
     /**
      * @brief Target component which provides information about a single target and updates derived sensor components.
      */
