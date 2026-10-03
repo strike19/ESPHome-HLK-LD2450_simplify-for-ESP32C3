@@ -56,5 +56,7 @@ Basiert auf Upstream `v1.0.6`. Das Projekt ist noch nicht auf Hardware getestet.
 - `tests/full.yaml` und die Beispiele validieren wieder mit aktuellem ESPHome;
   der `ota`-Eintrag in `examples/esp32c3_mqtt_minimal.yaml` enthält jetzt
   `platform: esphome`.
+- Die Minimalkonfiguration im README validiert wieder (leere Sensor-Einträge
+  sind mit aktuellem ESPHome ungültig und tragen jetzt einen `name`).
 
 [Unreleased]: https://github.com/strike19/ESPHome-HLK-LD2450_simplify-for-ESP32C3/commits/main

@@ -1,146 +1,83 @@
-# ESPHome HLK-LD2450 - Vereinfacht für ESP32-C3
+# ESPHome HLK-LD2450 – vereinfacht für ESP32-C3
 
-Eine vereinfachte ESPHome-Integration für den HLK-LD2450 mmWave Presence Sensor, optimiert für ESP32-C3 Super Mini Boards.
+Vereinfachte ESPHome-Komponente für den HLK-LD2450 mmWave-Präsenzsensor,
+ausgelegt auf ESP32-C3-Super-Mini-Boards und MQTT (z. B. ioBroker).
 
-ACHTUNG!!!!
-Noch nicht getestet und noch in der Entstehung!
-ACHTUNG!!!
+> **Achtung:** Dieses Projekt ist noch nicht auf Hardware getestet und in
+> Entwicklung. Optionen und Entitäten können sich ändern.
 
-> **Basiert auf:** [TillFleisch/ESPHome-HLK-LD2450](https://github.com/TillFleisch/ESPHome-HLK-LD2450)
+Basiert auf [TillFleisch/ESPHome-HLK-LD2450](https://github.com/TillFleisch/ESPHome-HLK-LD2450)
+(Upstream-Stand `v1.0.6`, MIT-Lizenz). Gegenüber dem Upstream sind unter anderem
+Zonen, Factory-Reset, Bluetooth-Schalter und Baudraten-Auswahl entfernt; die
+vollständige Liste steht im [Changelog](CHANGELOG.md).
 
-## 🔧 Behobene Bugs
+## Funktionsumfang
 
-### 1. `is_convex()` Funktion in `__init__.py`
-- **Problem:** Duplizierte Bedingung im Kreuzprodukt-Vergleich für Polygon-Konvexitätsprüfung
-- **Status:** Bug existierte, aber die Zonen-Funktionalität wurde komplett entfernt
+| Bereich | Entitäten / Optionen |
+| --- | --- |
+| Pro Target (max. 3) | X-Position, Y-Position, Geschwindigkeit, Distanz, Winkel |
+| Global | Occupancy (`binary_sensor`), Target Count (`sensor`) |
+| Einstellbare Grenzwerte (`number`) | maximale Distanz, minimaler und maximaler Neigungswinkel |
+| Steuerung | Tracking-Mode-Schalter (Multi-/Single-Target), Restart-Button |
+| Verhalten | `flip_x_axis`, `fast_off_detection` |
 
-### 2. `fast_off_detection` Bug in `target.cpp`
-- **Problem:** Bei `fast_off_detection` wurde `resolution_ != 0` (alter Wert) geprüft statt auch den neuen Wert zu berücksichtigen. Dadurch wurde `last_change_` nicht aktualisiert wenn ein Target erscheint.
-- **Lösung:** Bedingung geändert von:
-  ```cpp
-  if (fast_off_detection_ && resolution_ != 0 && ...)
-  ```
-  zu:
-  ```cpp
-  if (fast_off_detection_ && (resolution != 0 || resolution_ != 0) && ...)
-  ```
+## Hardware
 
-## ✅ Behaltene Features
+| ESP32-C3 | LD2450 |
+| --- | --- |
+| GPIO21 (TX) | RX |
+| GPIO20 (RX) | TX |
+| 3,3 V | VCC |
+| GND | GND |
 
-### Sensoren (pro Target - max. 3)
-- X Position (Meter)
-- Y Position (Meter)
-- Speed (m/s)
-- Distance (Meter)
-- Angle (Grad)
+Der UART-Logger muss deaktiviert sein (`logger: baud_rate: 0`), da der UART
+für den Sensor benötigt wird.
 
-### Globale Sensoren
-- **Occupancy** (binary_sensor) - Anwesenheitserkennung
-- **Target Count** (sensor) - Anzahl erkannter Ziele
+## Installation
 
-### Einstellbare Parameter (Number-Entities)
-- **Max Detection Distance** - Maximale Erkennungsdistanz (0-6m)
-- **Max Tilt Angle** - Maximaler Neigungswinkel (-90° bis 90°)
-- **Min Tilt Angle** - Minimaler Neigungswinkel (-90° bis 90°)
+1. Repository klonen:
 
-### Steuerung
-- **Tracking Mode Switch** - Multi-Target vs. Single-Target Modus
-- **Restart Button** - Sensor-Neustart
+   ```bash
+   git clone https://github.com/strike19/ESPHome-HLK-LD2450_simplify-for-ESP32C3
+   cd ESPHome-HLK-LD2450_simplify-for-ESP32C3
+   ```
 
-### Optionale Konfiguration
-- `flip_x_axis` - X-Achse spiegeln
-- `fast_off_detection` - Schnelle Erkennung wenn Target verschwindet
+2. Zugangsdaten anlegen. `secrets.yaml` muss neben der YAML-Datei liegen, die
+   sie verwendet, und wird von Git ignoriert:
 
-## ❌ Entfernte Features
+   ```bash
+   cp example-secrets.yaml examples/secrets.yaml
+   # examples/secrets.yaml mit den eigenen Werten ausfüllen
+   ```
 
-- **Zonen** (komplett) - zone.cpp, zone.h gelöscht
-- **Factory Reset Button** - Entfernt aus LD2450.cpp/h
-- **Bluetooth Switch** - bluetooth_switch.cpp, bluetooth_switch.h gelöscht
-- **Baud Rate Select** - baud_rate_select.cpp, baud_rate_select.h gelöscht
-- **Distance Resolution Sensor** - Aus target.cpp/h entfernt
+3. Beispiel flashen:
 
-## 📁 Gelöschte Dateien
+   ```bash
+   esphome run examples/esp32c3_mqtt_minimal.yaml
+   ```
 
-```
-components/LD2450/
-├── zone.cpp (gelöscht)
-├── zone.h (gelöscht)
-├── baud_rate_select.cpp (gelöscht)
-├── baud_rate_select.h (gelöscht)
-├── bluetooth_switch.cpp (gelöscht)
-├── bluetooth_switch.h (gelöscht)
-└── __pycache__/ (gelöscht)
-```
+Die Beispielkonfiguration `examples/esp32c3_mqtt_minimal.yaml` enthält WiFi
+(inkl. ESP32-C3-Einstellungen), MQTT, OTA, UART und alle Entitäten. Weitere
+Beispiele in `examples/` zeigen nur den `LD2450:`-Block und müssen in eine
+vollständige Konfiguration eingebettet werden.
 
-## 📶 WiFi Konfiguration für ESP32-C3
+### WiFi beim ESP32-C3 Super Mini
 
-Das ESP32-C3 Super Mini hatte ein bekanntes Problem mit -127 dB WiFi-Signal. Diese optimierte Konfiguration behebt das:
+Einige Boards zeigen ein sehr schwaches WiFi-Signal (-127 dB). Abhilfe schafft
+eine reduzierte Sendeleistung:
 
 ```yaml
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  output_power: 8.5dBm     # Kritisch für ESP32-C3 Mini!
-  power_save_mode: NONE    # Kein Power-Save für stabile Verbindung
-  fast_connect: true       # Schnellere Verbindung
+  output_power: 8.5dBm
+  power_save_mode: NONE
+  fast_connect: true
 ```
 
-## 🔐 Secrets Konfiguration
-
-### 1. Example-Datei kopieren
-```bash
-cp example-secrets.yaml secrets.yaml
-```
-
-### 2. secrets.yaml ausfüllen
-```yaml
-# WiFi
-wifi_ssid: "DEIN_WLAN_NAME"
-wifi_password: "DEIN_WLAN_PASSWORT"
-
-# MQTT (für ioBroker)
-mqtt_broker: "192.168.1.100"
-mqtt_username: "mqtt_user"
-mqtt_password: "mqtt_password"
-
-# API & OTA
-api_password: "api_passwort"
-ota_password: "ota_passwort"
-ap_password: "fallback_passwort"
-```
-
-> **Hinweis:** `secrets.yaml` ist in `.gitignore` und wird nicht eingecheckt!
-
-## 🚀 Installation
-
-### 1. Repository klonen
-```bash
-git clone https://github.com/strike19/ESPHome-HLK-LD2450_simplify-for-ESP32C3
-cd ESPHome-HLK-LD2450_simplify-for-ESP32C3
-```
-
-### 2. Secrets erstellen
-```bash
-cp example-secrets.yaml secrets.yaml
-# secrets.yaml mit deinen Daten ausfüllen
-```
-
-### 3. Beispiel-Konfiguration verwenden
-```bash
-esphome run examples/esp32c3_mqtt_minimal.yaml
-```
-
-## 📄 Beispiel-Konfiguration
-
-Siehe `examples/esp32c3_mqtt_minimal.yaml` für eine vollständige, minimale Konfiguration.
-
-### Minimale YAML-Konfiguration
+### Minimale Konfiguration
 
 ```yaml
 external_components:
-  - source:
-      type: local
-      path: components
+  - source: github://strike19/ESPHome-HLK-LD2450_simplify-for-ESP32C3@main
 
 uart:
   id: uart_ld2450
@@ -152,50 +89,73 @@ uart:
 
 LD2450:
   uart_id: uart_ld2450
-  name: "Presence"
   fast_off_detection: true
-  
   occupancy:
     name: "Occupancy"
-  
   target_count:
     name: "Target Count"
-  
   targets:
     - target:
         name: "Target 1"
         x_position:
+          name: "X"
         y_position:
+          name: "Y"
         speed:
+          name: "Speed"
         distance:
+          name: "Distance"
         angle:
-
+          name: "Angle"
   max_detection_distance:
     name: "Max Distance"
     initial_value: 6m
-    
   tracking_mode_switch:
     name: "Multi-Target Mode"
-  
   restart_button:
     name: "Restart Sensor"
 ```
 
-## 🔌 Hardware-Verbindung
+## Optionsreferenz
 
-### ESP32-C3 Super Mini → HLK-LD2450
+### `LD2450:`
 
-| ESP32-C3 | LD2450 |
-|----------|--------|
-| GPIO21 (TX) | RX |
-| GPIO20 (RX) | TX |
-| 3.3V | VCC |
-| GND | GND |
+| Option | Typ | Standard | Beschreibung |
+| --- | --- | --- | --- |
+| `uart_id` | ID | – (Pflicht) | UART-Bus, an dem der Sensor hängt |
+| `name` | String | `LD2450` | Name der Komponente (Logausgabe) |
+| `targets` | Liste, 1–3 Einträge | – | Targets, siehe unten |
+| `flip_x_axis` | bool | `false` | Spiegelt die X-Achse |
+| `fast_off_detection` | bool | `false` | Meldet „nicht belegt“ schneller, wenn sich ein Target nicht mehr ändert |
+| `occupancy` | `binary_sensor` | – | Anwesenheit |
+| `target_count` | `sensor` | – | Anzahl erkannter Targets |
+| `max_detection_distance` | Distanz oder `number` | – | Maximale Erkennungsdistanz, 0–6 m; als `number` mit `initial_value` (Standard `6m`), `step` (`10cm`), `restore_value` (`true`) |
+| `max_detection_tilt_angle` | Winkel oder `number` | – | Maximaler Neigungswinkel, -90° bis 90°; als `number`: `initial_value` `90°`, `step` `1°`, `restore_value` `true` |
+| `min_detection_tilt_angle` | Winkel oder `number` | – | Minimaler Neigungswinkel, -90° bis 90°; als `number`: `initial_value` `-90°`; muss kleiner sein als der maximale Winkel |
+| `max_distance_margin` | Distanz, 0–6 m | `25cm` | Toleranz an der Distanzgrenze |
+| `tilt_angle_margin` | Winkel, 0°–45° | `5°` | Toleranz an den Winkelgrenzen |
+| `tracking_mode_switch` | `switch` | – | Multi- oder Single-Target-Tracking |
+| `restart_button` | `button` | – | Startet den Sensor neu |
 
-## 📝 Lizenz
+### `targets:` → `- target:`
 
-MIT License - siehe [LICENCE](LICENCE)
+| Option | Typ | Standard | Beschreibung |
+| --- | --- | --- | --- |
+| `name` | String | `Target <n>` | Namenspräfix der Sensoren |
+| `debug` | bool | `false` | Gibt Rohwerte im Log aus |
+| `x_position`, `y_position`, `distance` | `sensor` | – | Meter (`unit_of_measurement`: `m` oder `cm`) |
+| `speed` | `sensor` | – | Meter pro Sekunde |
+| `angle` | `sensor` | – | Grad |
 
-## 🙏 Credits
+Die Sensoren sind Polling-Sensoren mit `update_interval: 1s` als Standard.
 
-- Ursprüngliches Repository: [TillFleisch/ESPHome-HLK-LD2450](https://github.com/TillFleisch/ESPHome-HLK-LD2450)
+## Entwicklung
+
+Regeln für Code, Dokumentation, Changelog, Versionierung und Commits stehen in
+[CONTRIBUTING.md](CONTRIBUTING.md). Änderungen werden im
+[Changelog](CHANGELOG.md) festgehalten.
+
+## Lizenz und Quellen
+
+MIT-Lizenz, siehe [LICENCE](LICENCE). Ursprüngliches Projekt:
+[TillFleisch/ESPHome-HLK-LD2450](https://github.com/TillFleisch/ESPHome-HLK-LD2450).
