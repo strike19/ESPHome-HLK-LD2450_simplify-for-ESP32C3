@@ -20,11 +20,16 @@ Basiert auf Upstream `v1.0.6`. Das Projekt ist noch nicht auf Hardware getestet.
 - Beispielkonfiguration `examples/esp32c3_mqtt_minimal.yaml` für ESP32-C3 Super
   Mini mit MQTT (ioBroker) und angepassten WiFi-Einstellungen
   (`output_power`, `power_save_mode`, `fast_connect`).
-- `example-secrets.yaml` als Vorlage für WiFi-, MQTT-, API- und OTA-Zugangsdaten.
+- `example-secrets.yaml` als Vorlage für WiFi-, MQTT- und OTA-Zugangsdaten.
 - `CONTRIBUTING.md` mit Regeln für Code, Dokumentation, Changelog, Versionierung
   und Commits.
 - `CHANGELOG.md` (dieses Dokument); es ersetzt `CHANGES.md` und
   `CHANGES_SUMMARY.md`.
+- Skript `tests/validate_examples.sh` und CI-Job „Validate examples“: alle
+  Dateien in `examples/` werden mit `esphome config` geprüft.
+- README: Hardware-Hinweise (Rastermaß, Stützkondensatoren,
+  Chip-Temperatursensor), Anwesenheit mit Nachlaufzeit (`delayed_off`) und
+  Roadmap.
 
 ### Changed
 
@@ -51,6 +56,9 @@ Basiert auf Upstream `v1.0.6`. Das Projekt ist noch nicht auf Hardware getestet.
 
 ### Fixed
 
+- Das Beispiel für den ESP32-C3 öffnete einen ungeschützten Fallback-Hotspot;
+  er nutzt jetzt das Passwort `ap_password` aus `secrets.yaml`.
+- Nicht verwendetes `api_password` aus `example-secrets.yaml` entfernt.
 - `fast_off_detection`: Ein neu erscheinendes Target setzt `last_change_` nun
   korrekt (geprüft werden alter und neuer `resolution`-Wert).
 - `tests/full.yaml` und die Beispiele validieren wieder mit aktuellem ESPHome;

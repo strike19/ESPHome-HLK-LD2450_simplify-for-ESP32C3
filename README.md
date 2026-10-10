@@ -33,6 +33,22 @@ vollständige Liste steht im [Changelog](CHANGELOG.md).
 Der UART-Logger muss deaktiviert sein (`logger: baud_rate: 0`), da der UART
 für den Sensor benötigt wird.
 
+Hinweise zum Aufbau:
+
+- Der Anschluss des LD2450 hat 2 mm Rastermaß (nicht 2,54 mm); passende
+  Stiftleisten oder Kabel verwenden.
+- Bei instabiler Versorgung helfen Stützkondensatoren nahe am Sensor
+  (z. B. 100 nF und 10 µF parallel zu VCC/GND).
+- Der ESP32 kann im Dauerbetrieb warm werden. Zur Diagnose lässt sich der
+  Chip-Temperatursensor ergänzen:
+
+  ```yaml
+  sensor:
+    - platform: internal_temperature
+      name: "ESP32 Internal Temperature"
+      entity_category: diagnostic
+  ```
+
 ## Installation
 
 1. Repository klonen:
@@ -148,6 +164,40 @@ LD2450:
 | `angle` | `sensor` | – | Grad |
 
 Die Sensoren sind Polling-Sensoren mit `update_interval: 1s` als Standard.
+
+### Anwesenheit mit Nachlaufzeit
+
+`occupancy` ist ein normaler `binary_sensor` und unterstützt die ESPHome-Filter.
+Eine Nachlaufzeit, die kurze Aussetzer überbrückt, ist daher ohne Code-Änderung
+möglich:
+
+```yaml
+LD2450:
+  occupancy:
+    name: "Occupancy"
+    filters:
+      - delayed_off: 10s
+```
+
+`fast_off_detection` wirkt dagegen entgegengesetzt (schnelleres Abschalten);
+beide Optionen sollten nicht ohne Test kombiniert werden.
+
+## Roadmap
+
+Vorrang haben stabile Basisfunktionen und automatische Tests (Hardware-Test,
+Kompilierung in der CI, Validierung der Beispiele). Erst danach kommen neue
+Funktionen.
+
+Mögliche spätere Erweiterungen, derzeit **nicht geplant**:
+
+- **Zonen:** Der Upstream hatte Polygon-Zonen, die hier entfernt wurden. Die in
+  ESPHome eingebaute `ld2450`-Komponente bietet bis zu drei rechteckige Zonen
+  (Koordinaten als `number`-Entities) mit eigenen Zählern. Ein vereinfachter
+  Wiedereinstieg könnte sich daran orientieren, z. B. mit Zonen-Belegung als
+  `binary_sensor`.
+- **Firmware-Version als `text_sensor`** (bisher nur im Log).
+- **Zähler für bewegte und ruhende Targets** sowie eine Bewegungsrichtung je Target.
+- **Anwesenheits-Timeout als `number`-Entity** statt fester Filter im YAML.
 
 ## Entwicklung
 
