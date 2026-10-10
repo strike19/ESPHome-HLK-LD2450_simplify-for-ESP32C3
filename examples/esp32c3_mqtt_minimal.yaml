@@ -28,10 +28,10 @@ wifi:
   power_save_mode: NONE    # Kein Power-Save für stabile Verbindung
   fast_connect: true       # Schnellere Verbindung
   
-  # Fallback AP (offenes Netzwerk für einfache Konfiguration)
+  # Fallback AP (passwortgeschützt, Passwort aus secrets.yaml)
   ap:
     ssid: "c3-wifi-test-fallback"
-    password: ""
+    password: !secret ap_password
 
 # MQTT für ioBroker Integration
 mqtt:
