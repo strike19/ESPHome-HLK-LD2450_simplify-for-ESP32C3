@@ -39,6 +39,8 @@ jobs:
             file: tests/base.yaml
             name: Test tests/base.yaml
             pio_cache_key: base
+          - id: examples
+            name: Validate examples
           - id: clang-format
             name: Run clang-format
           - id: yamllint
@@ -90,6 +92,10 @@ jobs:
         env:
           # Also cache libdeps, store them in a ~/.platformio subfolder
           PLATFORMIO_LIBDEPS_DIR: ~/.platformio/libdeps
+
+      - name: Validate examples
+        run: bash tests/validate_examples.sh
+        if: matrix.id == 'examples'
 
       - name: Run clang-format
         uses: jidicula/clang-format-action@v4.11.0
